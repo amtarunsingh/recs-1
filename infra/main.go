@@ -1,23 +1,93 @@
 package main
 
 import (
+	"os"
+
 	awscdk "github.com/aws/aws-cdk-go/awscdk/v2"
+	awsecr "github.com/aws/aws-cdk-go/awscdk/v2/awsecr"
 	"github.com/aws/jsii-runtime-go"
 	"github.com/bmbl-bumble2/recs-votes-storage/config"
 )
 
 func main() {
 	defer jsii.Close()
-
-	app := awscdk.NewApp(nil)
 	cfg := config.Load()
 
-	synth := awscdk.NewBootstraplessSynthesizer(&awscdk.BootstraplessSynthesizerProps{})
+	app := awscdk.NewApp(nil)
 
-	dataProps := &DataStackProps{
-		StackProps: awscdk.StackProps{Env: &awscdk.Environment{Account: jsii.String(cfg.Aws.AccountId), Region: jsii.String(cfg.Aws.Region)}, Synthesizer: synth},
+	env := &awscdk.Environment{Account: jsii.String(cfg.Aws.AccountId), Region: jsii.String(cfg.Aws.Region)}
+	envType := getOrDefault("ENV_TYPE", "")
+
+	var synthesizer awscdk.IStackSynthesizer
+	if envType == "local" {
+		synthesizer = awscdk.NewLegacyStackSynthesizer()
+	} else {
+		synthesizer = awscdk.NewDefaultStackSynthesizer(nil)
 	}
-	_, _ = NewDataStack(app, "DataStack", dataProps)
+
+	stack := awscdk.NewStack(app, jsii.String("UserVotesStorage"), &awscdk.StackProps{
+		Env:         env,
+		Synthesizer: synthesizer,
+	})
+
+	data := DataStack(stack, "Data", &DataStackProps{
+		StackProps: awscdk.StackProps{Env: env},
+	})
+
+	if envType != "local" {
+		vpc, alb, prodListener, testListener, blueTG, greenTG := NewNetwork(stack, "Net", nil)
+
+		_, svc, execRole, taskRole := NewEcsService(
+			stack, "Ecs",
+			vpc,
+			jsii.String(getOrDefault("SERVICE_NAME", "user-votes")),
+			blueTG, greenTG,
+		)
+
+		data.Counters.GrantReadWriteData(taskRole)
+		data.Romances.GrantReadWriteData(taskRole)
+		data.DeleteRomancesFifoTopic.GrantPublish(taskRole)
+		data.DeleteRomancesGroupFifoTopic.GrantPublish(taskRole)
+		data.DeleteRomancesFifoQueue.GrantConsumeMessages(taskRole)
+		data.DeleteRomancesGroupFifoQueue.GrantConsumeMessages(taskRole)
+
+		dg := NewEcsDeployment(stack, "CD", svc, prodListener, testListener, blueTG, greenTG)
+
+		repoName := getOrDefault("ECR_REPO_NAME", "user-votes-api")
+		ecrRepo := awsecr.NewRepository(stack, jsii.String("EcrRepo"), &awsecr.RepositoryProps{
+			RepositoryName:     jsii.String(repoName),
+			ImageScanOnPush:    jsii.Bool(true),
+			ImageTagMutability: awsecr.TagMutability_IMMUTABLE,
+			LifecycleRules: &[]*awsecr.LifecycleRule{{
+				MaxImageCount: jsii.Number(30),
+			}},
+		})
+		if cfg.Pipeline.ConnectionArn == "" {
+			panic("CODESTAR_CONNECTION_ARN must be set for non-local deployments")
+		}
+		NewPipeline(
+			stack, "Pipe",
+			jsii.String(cfg.Pipeline.ConnectionArn),
+			jsii.String("amtarunsingh"),
+			jsii.String("recs-1"),
+			jsii.String(cfg.Pipeline.Branch),
+			ecrRepo,
+			dg,
+			execRole,
+			taskRole,
+		)
+
+		awscdk.NewCfnOutput(stack, jsii.String("AlbDns"), &awscdk.CfnOutputProps{
+			Value: alb.LoadBalancerDnsName(),
+		})
+	}
 
 	app.Synth(nil)
+}
+
+func getOrDefault(k, def string) string {
+	if v := os.Getenv(k); v != "" {
+		return v
+	}
+	return def
 }
