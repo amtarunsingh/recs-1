@@ -3,12 +3,13 @@ package dynamodb
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	appConfig "github.com/bmbl-bumble2/recs-votes-storage/config"
 	"github.com/bmbl-bumble2/recs-votes-storage/internal/shared/platform"
-	"os"
 )
 
 //go:generate mockgen -destination=../../../testlib/mocks/dynamodb_client_mock.go -package=mocks github.com/bmbl-bumble2/recs-votes-storage/internal/shared/platform/dynamodb Client
@@ -26,16 +27,18 @@ type Client interface {
 }
 
 func NewDynamoDbClient(conf appConfig.Config, logger platform.Logger) Client {
-	cfg, err := config.LoadDefaultConfig(
-		context.TODO(),
+
+	opts := []func(*config.LoadOptions) error{
 		config.WithRegion(conf.Aws.Region),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
-			conf.Aws.AccessKeyId,
-			conf.Aws.SecretAccessKey,
-			"",
-		)),
-		config.WithBaseEndpoint(conf.Aws.DynamoDbEndpoint),
-	)
+	}
+	if conf.Aws.AccessKeyId != "" && conf.Aws.SecretAccessKey != "" {
+		opts = append(opts, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(conf.Aws.AccessKeyId, conf.Aws.SecretAccessKey, "")))
+	}
+	if conf.Aws.DynamoDbEndpoint != "" {
+		opts = append(opts, config.WithBaseEndpoint(conf.Aws.DynamoDbEndpoint))
+	}
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(), opts...)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Unable to load SDK config, %v", err))
 		os.Exit(1)

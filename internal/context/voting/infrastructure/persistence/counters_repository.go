@@ -97,7 +97,7 @@ func (c *CountersRepository) GetHourlyCounters(
 	maxHour := uint8(0)
 
 	for _, hour := range hoursOffsetGroups.Values() {
-		hourUnixTimestamp := timeutil.HourStart(time.Now().Add(time.Duration(hour) * time.Hour * -1)).Unix()
+		hourUnixTimestamp := timeutil.HourStart(time.Now().UTC().Add(time.Duration(hour) * time.Hour * -1)).Unix()
 		result[hour] = &entity.CountersGroup{
 			ActiveUserKey:     activeUserKey,
 			HourUnixTimestamp: int32(hourUnixTimestamp),
@@ -107,11 +107,12 @@ func (c *CountersRepository) GetHourlyCounters(
 		}
 	}
 
-	timeFilter := timeutil.HourStart(time.Now().Add(time.Duration(maxHour) * time.Hour * -1))
+	timeFilter := timeutil.HourStart(time.Now().UTC().Add(time.Duration(maxHour) * time.Hour * -1))
 
 	out, err := c.dynamoDbClient.Query(ctx, &dynamodb.QueryInput{
 		TableName:              aws.String(CountersTableName),
-		KeyConditionExpression: aws.String("u = :pk AND h > :sk"),
+		KeyConditionExpression: aws.String("u = :pk AND h >= :sk"),
+		ConsistentRead:         aws.Bool(true),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
 			":pk": &types.AttributeValueMemberS{Value: activeUserKey.ActiveUserId().String()},
 			":sk": &types.AttributeValueMemberN{Value: strconv.FormatInt(timeFilter.Unix(), 10)},

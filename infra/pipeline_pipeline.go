@@ -39,11 +39,13 @@ func NewPipeline(
 		&awscodebuild.PipelineProjectProps{
 			Environment: &awscodebuild.BuildEnvironment{
 				BuildImage: awscodebuild.LinuxBuildImage_STANDARD_7_0(),
+				Privileged: jsii.Bool(true),
 			},
 			BuildSpec: awscodebuild.BuildSpec_FromSourceFilename(jsii.String("buildspec.yml")),
 			EnvironmentVariables: &map[string]*awscodebuild.BuildEnvironmentVariable{
-				"AWS_DEFAULT_REGION": {Value: awscdk.Stack_Of(scope).Region()},
-				"PIPELINE_STAGE":     {Value: jsii.String("tests")},
+				"AWS_DEFAULT_REGION":  {Value: awscdk.Stack_Of(scope).Region()},
+				"PIPELINE_STAGE":      {Value: jsii.String("tests")},
+				"GO_REQUIRED_VERSION": {Value: jsii.String("1.25.3")},
 			},
 		})
 

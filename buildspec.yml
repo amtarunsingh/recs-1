@@ -1,4 +1,4 @@
-version: "0.2"
+version: 0.2
 
 env:
   variables:
@@ -16,8 +16,9 @@ phases:
 
   pre_build:
     commands:
-      - set -eu pipefail
+      - set -euo pipefail
       - STAGE="${PIPELINE_STAGE:-build}"
+      - if [ "$STAGE" = "tests" ]; then echo "Checking Docker"; docker --version || true; docker info; fi
       - if [ "$STAGE" = "tests" ]; then echo "Running lint"; make lint; echo "Running test"; make test; fi
       - if [ "$STAGE" = "build" ]; then echo "Resolving variables..."; fi
 
