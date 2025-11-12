@@ -1,6 +1,6 @@
 # Recs Votes Storage
 
-A production-grade REST API service for managing user votes and relationships ("romances") in Bumble 2.0's recommendation system. This service handles voting interactions between users, tracks vote statistics (hourly and lifetime), and manages asynchronous cleanup operations for bulk deletions.
+A production-grade REST API service for managing user votes and relationships ("romances") in Bumble 2.0's recommendation system. This service handles voting interactions between users, tracks vote statistics (hourly and lifetime), and manages asynchronous cleanup operations for bulk deletions. oi
 
 ## Architecture & Design
 

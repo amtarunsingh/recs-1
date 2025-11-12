@@ -1,0 +1,27 @@
+{
+  "family": "user-votes-api",
+  "executionRoleArn": "<EXECUTION_ROLE_ARN>",
+  "taskRoleArn": "<TASK_ROLE_ARN>",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "containerDefinitions": [
+    {
+      "name": "app",
+      "image": "<IMAGE>",
+      "portMappings": [
+        { "containerPort": 8888, "protocol": "tcp" }
+      ],
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/user-votes",
+          "awslogs-region": "YOUR_REGION",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

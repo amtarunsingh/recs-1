@@ -1,0 +1,40 @@
+# syntax=docker/dockerfile:1.6
+
+FROM --platform=$BUILDPLATFORM golang:1.25-bookworm AS builder
+WORKDIR /src
+
+ARG APP_MAIN=./cmd/app
+ARG APP_NAME=user-votes-storage
+ARG TARGETOS
+ARG TARGETARCH
+ENV CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH GOTOOLCHAIN=auto
+
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
+
+COPY . .
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go build -trimpath -ldflags="-s -w -buildid=" -buildvcs=false \
+    -o /out/${APP_NAME} ${APP_MAIN}
+
+FROM debian:bookworm-slim
+WORKDIR /app
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates curl \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /out/* /app/
+
+RUN groupadd -g 10001 app && useradd -r -u 10001 -g app -d /app -s /usr/sbin/nologin app \
+ && chown -R app:app /app
+USER 10001:10001
+
+ENV AWS_REGION=us-east-2 LOG_LEVEL=INFO
+
+ARG APP_PORT=8888
+EXPOSE ${APP_PORT}
+
+ENTRYPOINT ["/app/user-votes-storage"]
+CMD ["-p","8888"]

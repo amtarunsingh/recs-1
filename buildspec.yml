@@ -1,0 +1,55 @@
+version: "0.2"
+
+env:
+  variables:
+    DOCKERFILE_PATH: ./docker/Dockerfile.prod
+    CONTAINER_NAME: app
+    CONTAINER_PORT: "8888"
+    PIPELINE_STAGE: build
+
+phases:
+  install:
+    runtime-versions:
+      golang: 1.23
+    commands:
+      - echo "Go runtime:" && go version || true
+
+  pre_build:
+    commands:
+      - set -eu pipefail
+      - STAGE="${PIPELINE_STAGE:-build}"
+      - if [ "$STAGE" = "tests" ]; then echo "Running fmt-check"; make fmt-check; echo "Running lint"; make lint; fi
+      - if [ "$STAGE" = "build" ]; then echo "Resolving variables..."; fi
+
+      - if [ "$STAGE" = "build" ]; then ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text); fi
+      - if [ "$STAGE" = "build" ]; then REPO_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}"; fi
+      - if [ "$STAGE" = "build" ]; then COMMIT_HASH=$(echo "$CODEBUILD_RESOLVED_SOURCE_VERSION" | cut -c 1-7 || true); fi
+      - if [ "$STAGE" = "build" ]; then IMAGE_TAG=${COMMIT_HASH:-latest}; fi
+      - if [ "$STAGE" = "build" ]; then echo "Logging in to ECR..."; fi
+      - if [ "$STAGE" = "build" ]; then aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"; fi
+
+  build:
+    commands:
+      - STAGE="${PIPELINE_STAGE:-build}"
+      - if [ "$STAGE" = "build" ]; then echo "Building image ${REPO_URI}:${IMAGE_TAG}"; docker build -f "${DOCKERFILE_PATH}" -t "${REPO_URI}:${IMAGE_TAG}" .; else echo "Skipping docker build for tests stage"; fi
+
+  post_build:
+    commands:
+      - STAGE="${PIPELINE_STAGE:-build}"
+      - if [ "$STAGE" = "build" ]; then IMAGE="${REPO_URI}:${IMAGE_TAG}"; echo "Pushing ${IMAGE}"; docker push "${IMAGE}"; fi
+
+      - if [ "$STAGE" = "build" ]; then echo "EXECUTION_ROLE_ARN  ${EXECUTION_ROLE_ARN}"; echo "TASK_ROLE_ARN  ${TASK_ROLE_ARN}"; fi
+
+      - if [ "$STAGE" = "build" ]; then sed -i "s|<EXECUTION_ROLE_ARN>|${EXECUTION_ROLE_ARN}|g" taskdef.json; fi
+      - if [ "$STAGE" = "build" ]; then sed -i "s|<TASK_ROLE_ARN>|${TASK_ROLE_ARN}|g" taskdef.json; fi
+      - if [ "$STAGE" = "build" ]; then sed -i "s|YOUR_REGION|${AWS_DEFAULT_REGION}|g" taskdef.json; fi
+      - if [ "$STAGE" = "build" ]; then echo "Final taskdef.json:" && cat taskdef.json; fi
+
+      - if [ "$STAGE" = "build" ]; then printf '{"ImageURI":"%s"}' "${IMAGE}" > imageDetail.json; else printf '{"ImageURI":""}' > imageDetail.json; fi
+      - echo "imageDetail.json:" && cat imageDetail.json
+
+artifacts:
+  files:
+    - appspec.yaml
+    - taskdef.json
+    - imageDetail.json

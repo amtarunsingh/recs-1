@@ -22,6 +22,11 @@ type CountersConfig struct {
 	TtlSeconds int64
 }
 
+type PipelineConfig struct {
+	ConnectionArn string `env:"CONNECTION_ARN" envDefault:"arn:aws:codeconnections:us-east-2:875632962180:connection/cc2e1ba7-8dd3-48bf-a687-cfc28fbd99e2"`
+	Branch        string `env:"PIPELINE_BRANCH" envDefault:"master"`
+}
+
 type Config struct {
 	LogLevel string `env:"LOG_LEVEL" envDefault:"INFO"`
 	Aws      struct {
@@ -34,6 +39,7 @@ type Config struct {
 	}
 	Counters CountersConfig
 	Romances RomancesConfig
+	Pipeline PipelineConfig
 }
 
 type ServerOptions struct {
