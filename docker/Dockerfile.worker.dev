@@ -1,0 +1,13 @@
+FROM golang:1.25
+
+WORKDIR /app
+
+# hot reload
+RUN go install github.com/air-verse/air@v1.63
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+CMD ["air", "-c", "/app/docker/air_conf/message_processor.toml"]

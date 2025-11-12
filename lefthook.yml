@@ -1,0 +1,18 @@
+pre-commit:
+  parallel: true
+  commands:
+    verify:
+      run: make verify-pre-commit
+
+commit-msg:
+  commands:
+    conventional:
+      run: conform enforce --commit-msg-file {1}
+    jira:
+      run: make check-commit-msg-has-jira COMMIT_MSG_FILE="{1}"
+
+pre-push:
+  parallel: true
+  commands:
+    verify:
+      run: make verify-pre-push

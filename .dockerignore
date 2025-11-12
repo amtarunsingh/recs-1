@@ -1,0 +1,11 @@
+**/.git
+**/.idea
+**/.vscode
+**/tmp
+**/*.log
+**/*.env
+**/*.toml
+**/*.sh
+**/*.md
+!docker/air_conf/app.toml
+!docker/air_conf/message_processor.toml

@@ -1,0 +1,12 @@
+[build]
+cmd   = "go build -o /tmp/app ./cmd/app"
+bin   = "/tmp/app"
+delay = 100
+exclude_dir = ["docker", "tmp"]
+args_bin  = ["--port=8888", "--host=0.0.0.0"]
+
+[log]
+time = true
+
+[screen]
+clear_on_rebuild = true

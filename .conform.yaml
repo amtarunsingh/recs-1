@@ -1,0 +1,17 @@
+spec:
+  type: commit
+  rules:
+    - type: conventional_commit
+      spec:
+        types:
+          - build
+          - chore
+          - ci
+          - docs
+          - feat
+          - fix
+          - perf
+          - refactor
+          - revert
+          - style
+          - test

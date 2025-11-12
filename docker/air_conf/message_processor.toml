@@ -1,0 +1,13 @@
+[build]
+cmd   = "go build -o /tmp/message_processor ./cmd/message_processor"
+bin   = "/tmp/message_processor"
+delay = 100
+exclude_dir = ["docker", "tmp"]
+args_bin  = ["--port=8888", "--host=0.0.0.0"]
+send_interrupt = true
+
+[log]
+time = true
+
+[screen]
+clear_on_rebuild = true

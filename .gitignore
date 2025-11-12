@@ -1,0 +1,10 @@
+.idea
+.DS_Store
+/tmp/
+/bin/
+/docker/.localstack/
+
+# CDK
+/infra/cdk.out/
+/infra/synth.stderr.log
+/infra/tmp.cfn.json

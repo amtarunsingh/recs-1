@@ -1,0 +1,94 @@
+name: user-votes
+
+services:
+  localstack:
+    image: localstack/localstack:4.9.0
+    container_name: localstack
+    expose:
+      - "127.0.0.1:4566:4566"
+      - "4510-4559"
+    environment:
+      SERVICES: "cloudformation,dynamodb,sns,sqs"
+      DEBUG: "0"
+      LS_LOG: "error"
+      AWS_DEFAULT_REGION: "us-east-2"
+      AWS_REGION: "us-east-2"
+      AWS_ACCESS_KEY_ID: "dummy"
+      AWS_SECRET_ACCESS_KEY: "dummy"
+      PERSISTENCE: "0"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf -o /dev/null http://localhost:4566/_localstack/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 25s
+    restart: unless-stopped
+
+  infra:
+    image: golang:1.25-alpine
+    container_name: user-votes-infra-1
+    depends_on:
+      localstack:
+        condition: service_healthy
+    working_dir: /work/infra
+    volumes:
+      - ..:/work
+    environment:
+      AWS_REGION: "us-east-2"
+      AWS_ACCESS_KEY_ID: "dummy"
+      AWS_SECRET_ACCESS_KEY: "dummy"
+      AWS_EC2_METADATA_DISABLED: "true"
+      AWS_DEFAULT_REGION: "us-east-2"
+      DEPLOY_SERVICE: "false"
+      CDK_DEFAULT_ACCOUNT: "000000000000"
+      AWS_ENDPOINT_URL: "http://localstack:4566"
+      DYNAMO_DB_ENDPOINT: "http://localstack:4566"
+      SNS_ENDPOINT: "http://localstack:4566"
+      GOTOOLCHAIN: "auto"
+    entrypoint: ["/bin/sh","/work/docker/scripts/cdk-local-deploy.sh"]
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.app.dev
+    container_name: votes-app-dev
+    depends_on:
+      infra:
+        condition: service_completed_successfully
+    environment:
+      LOG_LEVEL: "DEBUG"
+      AWS_REGION: "us-east-2"
+      AWS_ACCESS_KEY_ID: "dummy"
+      AWS_SECRET_ACCESS_KEY: "dummy"
+      DYNAMO_DB_ENDPOINT: "http://localstack:4566"
+      SNS_ENDPOINT: "http://localstack:4566"
+    ports:
+      - "8888:8888"
+    volumes:
+      - ..:/app
+      - go-mod:/go/pkg/mod
+      - go-build:/root/.cache/go-build
+
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.worker.dev
+    container_name: votes-workers-dev
+    depends_on:
+      infra:
+        condition: service_completed_successfully
+    environment:
+      LOG_LEVEL: "DEBUG"
+      AWS_REGION: "us-east-2"
+      AWS_ACCESS_KEY_ID: "dummy"
+      AWS_SECRET_ACCESS_KEY: "dummy"
+      DYNAMO_DB_ENDPOINT: "http://localstack:4566"
+      SNS_ENDPOINT: "http://localstack:4566"
+    volumes:
+      - ..:/app
+      - go-mod:/go/pkg/mod
+      - go-build:/root/.cache/go-build
+
+volumes:
+  go-mod:
+  go-build:
