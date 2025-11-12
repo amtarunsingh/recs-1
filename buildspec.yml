@@ -18,7 +18,7 @@ phases:
     commands:
       - set -eu pipefail
       - STAGE="${PIPELINE_STAGE:-build}"
-      - if [ "$STAGE" = "tests" ]; then echo "Running fmt-check"; make fmt-check; echo "Running lint"; make lint; fi
+      - if [ "$STAGE" = "tests" ]; then echo "Running lint"; make lint; echo "Running test"; make test; fi
       - if [ "$STAGE" = "build" ]; then echo "Resolving variables..."; fi
 
       - if [ "$STAGE" = "build" ]; then ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text); fi
