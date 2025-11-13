@@ -3,14 +3,15 @@ package testcontainer
 import (
 	"context"
 	"fmt"
-	"github.com/docker/go-connections/nat"
+	"os"
+	"sync"
+
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/localstack"
-	"os"
-	"sync"
 )
 
 type LocalStackContainer struct {
@@ -43,7 +44,9 @@ func SetupLocalStack(ctx context.Context, region string) (*LocalStackContainer, 
 
 		endpoint, err := container.Endpoint(ctx, "http")
 		if err != nil {
+
 			// Fallback: manually compose endpoint from mapped edge ports
+
 			host, hostErr := container.Host(ctx)
 			if hostErr != nil {
 				_ = container.Terminate(ctx)

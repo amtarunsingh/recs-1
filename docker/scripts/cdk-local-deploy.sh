@@ -44,14 +44,14 @@ set -e
 
 # Synthesize & verify JSON 
 cdklocal context --clear
-ENV_TYPE="$ENV_TYPE" cdklocal synth -j DataStack 1>/work/infra/tmp.cfn.json 2>/work/infra/synth.stderr.log || true
+ENV_TYPE="$ENV_TYPE" cdklocal synth -j UserVotesStorage 1>/work/infra/tmp.cfn.json 2>/work/infra/synth.stderr.log || true
 
 echo "[infra] resource types in template:"
 jq -r '.Resources | to_entries[] | .value.Type' /work/infra/tmp.cfn.json | sort -u
 
 # Deploy (NO LOOKUPS, NO BOOTSTRAP) 
 ENV_TYPE="$ENV_TYPE" \
-AWS_ENVAR_ALLOWLIST=AWS_REGION AWS_REGION=${AWS_REGION} cdklocal deploy DataStack \
+AWS_ENVAR_ALLOWLIST=AWS_REGION AWS_REGION=${AWS_REGION} cdklocal deploy UserVotesStorage \
   --require-approval never \
   --progress events \
   --verbose \
