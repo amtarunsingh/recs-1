@@ -10,7 +10,7 @@ env:
 phases:
   install:
     runtime-versions:
-      golang: 1.23
+      golang: 1.25
     commands:
       - echo "Go runtime:" && go version || true
 
@@ -20,8 +20,8 @@ phases:
       - STAGE="${PIPELINE_STAGE:-build}"
       - if [ "$STAGE" = "tests" ]; then echo "Checking Docker"; docker --version || true; docker info; fi
       - if [ "$STAGE" = "tests" ]; then echo "Running lint"; make lint; echo "Running test"; make test; fi
+      
       - if [ "$STAGE" = "build" ]; then echo "Resolving variables..."; fi
-
       - if [ "$STAGE" = "build" ]; then ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text); fi
       - if [ "$STAGE" = "build" ]; then REPO_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}"; fi
       - if [ "$STAGE" = "build" ]; then COMMIT_HASH=$(echo "$CODEBUILD_RESOLVED_SOURCE_VERSION" | cut -c 1-7 || true); fi
