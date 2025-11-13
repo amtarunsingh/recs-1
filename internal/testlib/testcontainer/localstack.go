@@ -3,14 +3,14 @@ package testcontainer
 import (
 	"context"
 	"fmt"
-	"github.com/docker/go-connections/nat"
+	"os"
+	"sync"
+
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/localstack"
-	"os"
-	"sync"
 )
 
 type LocalStackContainer struct {
@@ -43,27 +43,9 @@ func SetupLocalStack(ctx context.Context, region string) (*LocalStackContainer, 
 
 		endpoint, err := container.Endpoint(ctx, "http")
 		if err != nil {
-			// Fallback: manually compose endpoint from mapped edge ports
-			host, hostErr := container.Host(ctx)
-			if hostErr != nil {
-				_ = container.Terminate(ctx)
-				localstackInitErr = fmt.Errorf("failed to get localstack host: %w (endpoint error: %v)", hostErr, err)
-				return
-			}
-			var mapped nat.Port
-			candidatePorts := []string{"4566/tcp", "4510/tcp"}
-			for _, p := range candidatePorts {
-				if mp, mapErr := container.MappedPort(ctx, nat.Port(p)); mapErr == nil && mp.Port() != "" {
-					mapped = mp
-					break
-				}
-			}
-			if mapped.Port() == "" {
-				_ = container.Terminate(ctx)
-				localstackInitErr = fmt.Errorf("failed to get localstack endpoint: %w (no mapped edge port found among %v)", err, candidatePorts)
-				return
-			}
-			endpoint = fmt.Sprintf("http://%s:%s", host, mapped.Port())
+			_ = container.Terminate(ctx)
+			localstackInitErr = fmt.Errorf("failed to get localstack endpoint: %w", err)
+			return
 		}
 
 		cfg, err := awsConfig.LoadDefaultConfig(
