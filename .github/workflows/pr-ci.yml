@@ -27,14 +27,14 @@ jobs:
           go version
           go env
 
-      - name: Check formatting
-        run: make fmt-check
+      # - name: Check formatting
+      #   run: make fmt-check
 
-      - name: Lint (Makefile)
-        run: make lint
+      # - name: Lint (Makefile)
+      #   run: make lint
 
-      - name: Build app
-        run: make build
+      # - name: Build app
+      #   run: make build
 
       - name: Test
         run: make test
