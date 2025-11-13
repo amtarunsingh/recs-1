@@ -33,7 +33,7 @@ func SetupLocalStack(ctx context.Context, region string) (*LocalStackContainer, 
 				"SERVICES":   "dynamodb",
 				"DEBUG":      "0",
 				"LS_LOG":     "error",
-				"EDGE_PORT":  "4510",
+				"EDGE_PORT":  "4566",
 				"AWS_REGION": region,
 			}),
 		)
