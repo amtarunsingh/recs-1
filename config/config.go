@@ -32,10 +32,12 @@ type PipelineConfig struct {
 type Config struct {
 	LogLevel string `env:"LOG_LEVEL" envDefault:"INFO"`
 	Aws      struct {
-		Region           string `env:"AWS_REGION" envDefault:"us-east-2"`
-		AccountId        string `env:"AWS_ACCOUNT_ID" envDefault:"000000000000"`
-		AccessKeyId      string `env:"AWS_ACCESS_KEY_ID" envDefault:"dummy"`
-		SecretAccessKey  string `env:"AWS_SECRET_ACCESS_KEY" envDefault:"dummy"`
+		Region    string `env:"AWS_REGION" envDefault:"us-east-2"`
+		AccountId string `env:"AWS_ACCOUNT_ID" envDefault:"000000000000"`
+		// AccessKeyId      string `env:"AWS_ACCESS_KEY_ID" envDefault:"dummy"`
+		// SecretAccessKey  string `env:"AWS_SECRET_ACCESS_KEY" envDefault:"dummy"`
+		AccessKeyId      string `env:"AWS_ACCESS_KEY_ID"`
+		SecretAccessKey  string `env:"AWS_SECRET_ACCESS_KEY"`
 		DynamoDbEndpoint string `env:"DYNAMO_DB_ENDPOINT"`
 		SnsEndpoint      string `env:"SNS_ENDPOINT"`
 	}

@@ -31,11 +31,15 @@ func NewDynamoDbClient(conf appConfig.Config, logger platform.Logger) Client {
 	opts := []func(*config.LoadOptions) error{
 		config.WithRegion(conf.Aws.Region),
 	}
-	if conf.Aws.AccessKeyId != "" && conf.Aws.SecretAccessKey != "" {
-		opts = append(opts, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(conf.Aws.AccessKeyId, conf.Aws.SecretAccessKey, "")))
-	}
+	// Only use static credentials when a custom endpoint is specified (e.g. LocalStack).
+	// In AWS (ECS/Lambda/EC2), rely on the default provider chain (task role / instance role).
 	if conf.Aws.DynamoDbEndpoint != "" {
 		opts = append(opts, config.WithBaseEndpoint(conf.Aws.DynamoDbEndpoint))
+		if conf.Aws.AccessKeyId != "" && conf.Aws.SecretAccessKey != "" {
+			opts = append(opts, config.WithCredentialsProvider(
+				credentials.NewStaticCredentialsProvider(conf.Aws.AccessKeyId, conf.Aws.SecretAccessKey, ""),
+			))
+		}
 	}
 
 	cfg, err := config.LoadDefaultConfig(context.TODO(), opts...)
