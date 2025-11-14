@@ -14,6 +14,7 @@ import (
 
 func NewPipeline(
 	scope constructs.Construct, id string,
+	pipelineName *string,
 	connectionArn, repoOwner, repoName, repoBranch *string,
 	ecrRepo awsecr.Repository,
 	deployGroup awscodedeploy.IEcsDeploymentGroup,
@@ -45,7 +46,7 @@ func NewPipeline(
 			EnvironmentVariables: &map[string]*awscodebuild.BuildEnvironmentVariable{
 				"AWS_DEFAULT_REGION":  {Value: awscdk.Stack_Of(scope).Region()},
 				"PIPELINE_STAGE":      {Value: jsii.String("tests")},
-				"GO_REQUIRED_VERSION": {Value: jsii.String("1.25.3")},
+				"GO_REQUIRED_VERSION": {Value: jsii.String("1.25")},
 			},
 		})
 
@@ -94,7 +95,10 @@ func NewPipeline(
 		})
 
 	pl := awscodepipeline.NewPipeline(scope, jsii.String("AppPipeline"),
-		&awscodepipeline.PipelineProps{PipelineName: jsii.String("user-votes-bluegreen")})
+		&awscodepipeline.PipelineProps{
+			PipelineName: pipelineName,
+			PipelineType: awscodepipeline.PipelineType_V2,
+		})
 
 	pl.AddStage(&awscodepipeline.StageOptions{StageName: jsii.String("Source"), Actions: &[]awscodepipeline.IAction{source}})
 	pl.AddStage(&awscodepipeline.StageOptions{StageName: jsii.String("Test"), Actions: &[]awscodepipeline.IAction{test}})

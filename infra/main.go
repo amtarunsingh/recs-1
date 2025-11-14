@@ -35,6 +35,9 @@ func main() {
 	})
 
 	if envType != "local" {
+		if cfg.Pipeline.ConnectionArn == "" {
+			panic("CODECONNECTION_ARN must be set for non-local deployments")
+		}
 		vpc, alb, prodListener, testListener, blueTG, greenTG := NewNetwork(stack, "Net", nil)
 
 		_, svc, execRole, taskRole := NewEcsService(
@@ -62,14 +65,13 @@ func main() {
 				MaxImageCount: jsii.Number(30),
 			}},
 		})
-		if cfg.Pipeline.ConnectionArn == "" {
-			panic("CODESTAR_CONNECTION_ARN must be set for non-local deployments")
-		}
+
 		NewPipeline(
 			stack, "Pipe",
+			jsii.String("user-votes-bluegreen"),
 			jsii.String(cfg.Pipeline.ConnectionArn),
-			jsii.String("amtarunsingh"),
-			jsii.String("recs-1"),
+			jsii.String(cfg.Pipeline.Owner),
+			jsii.String(cfg.Pipeline.Repo),
 			jsii.String(cfg.Pipeline.Branch),
 			ecrRepo,
 			dg,

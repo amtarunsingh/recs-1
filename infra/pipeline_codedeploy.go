@@ -19,10 +19,12 @@ func NewEcsDeployment(scope constructs.Construct, id string,
 
 	metric5xx := prodListener.LoadBalancer().Metrics().HttpCodeElb(elbv2.HttpCodeElb_ELB_5XX_COUNT, nil)
 	alarm := awscloudwatch.NewAlarm(scope, jsii.String("Alb5xxAlarm"), &awscloudwatch.AlarmProps{
-		Metric:            metric5xx,
-		EvaluationPeriods: jsii.Number(1),
-		Threshold:         jsii.Number(1),
-		DatapointsToAlarm: jsii.Number(1),
+		Metric:             metric5xx,
+		EvaluationPeriods:  jsii.Number(2),
+		Threshold:          jsii.Number(10),
+		DatapointsToAlarm:  jsii.Number(2),
+		ComparisonOperator: awscloudwatch.ComparisonOperator_GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+		TreatMissingData:   awscloudwatch.TreatMissingData_NOT_BREACHING,
 	})
 
 	app := awscodedeploy.NewEcsApplication(scope, jsii.String(id+"App"), nil)

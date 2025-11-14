@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	awsec2 "github.com/aws/aws-cdk-go/awscdk/v2/awsec2"
+	awsecr "github.com/aws/aws-cdk-go/awscdk/v2/awsecr"
 	awsecs "github.com/aws/aws-cdk-go/awscdk/v2/awsecs"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awselasticloadbalancingv2"
 	awsiam "github.com/aws/aws-cdk-go/awscdk/v2/awsiam"
@@ -38,12 +39,13 @@ func NewEcsService(
 			jsii.String("ssmmessages:OpenControlChannel"),
 			jsii.String("ssmmessages:OpenDataChannel"),
 		},
-		Resources: &[]*string{jsii.String("*")},
+		Resources: &[]*string{
+			jsii.String("arn:aws:ecs:" + *awscdk.Stack_Of(scope).Region() + ":" + *awscdk.Stack_Of(scope).Account() + ":*")},
 	}))
 
-	awslogs.NewLogGroup(scope, jsii.String(id+"LogGroup"), &awslogs.LogGroupProps{
-		LogGroupName:  jsii.String("/ecs/user-votes"),
-		Retention:     awslogs.RetentionDays_ONE_WEEK,
+	logGroup := awslogs.NewLogGroup(scope, jsii.String(id+"LogGroup"), &awslogs.LogGroupProps{
+		LogGroupName:  jsii.String("/ecs/" + *serviceName),
+		Retention:     awslogs.RetentionDays_ONE_MONTH,
 		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
 
@@ -54,25 +56,39 @@ func NewEcsService(
 		TaskRole:       taskRole,
 	})
 
+	ecrRepo := awsecr.Repository_FromRepositoryName(scope, jsii.String(id+"EcrRepo"), serviceName)
+
+	imageTag := os.Getenv("IMAGE_TAG")
+	if imageTag == "" {
+		imageTag = "latest"
+	}
+
 	task.AddContainer(jsii.String("app"), &awsecs.ContainerDefinitionOptions{
-		Image:      awsecs.ContainerImage_FromRegistry(jsii.String("public.ecr.aws/docker/library/busybox:latest"), nil),
-		EntryPoint: &[]*string{jsii.String("sh"), jsii.String("-c")},
+		Image:        awsecs.ContainerImage_FromEcrRepository(ecrRepo, jsii.String(imageTag)),
+		Essential:    jsii.Bool(true),
+		PortMappings: &[]*awsecs.PortMapping{{ContainerPort: jsii.Number(8888)}},
+		EntryPoint:   &[]*string{jsii.String("sh"), jsii.String("-c")},
 		Command: &[]*string{
 			jsii.String("mkdir -p /www && echo OK > /www/health && httpd -f -p 8888 -h /www"),
 		},
-		Essential:    jsii.Bool(true),
-		PortMappings: &[]*awsecs.PortMapping{{ContainerPort: jsii.Number(8888)}},
+		Logging: awsecs.LogDrivers_AwsLogs(&awsecs.AwsLogDriverProps{
+			StreamPrefix: jsii.String("app"),
+			LogGroup:     logGroup,
+		}),
 	})
 
 	svc := awsecs.NewFargateService(scope, jsii.String(id+"Service"), &awsecs.FargateServiceProps{
-		Cluster:        cluster,
-		ServiceName:    serviceName,
-		TaskDefinition: task,
-		DesiredCount:   jsii.Number(2),
+		Cluster:           cluster,
+		ServiceName:       serviceName,
+		TaskDefinition:    task,
+		DesiredCount:      jsii.Number(2),
+		MinHealthyPercent: jsii.Number(100),
+		MaxHealthyPercent: jsii.Number(200),
 		DeploymentController: &awsecs.DeploymentController{
 			Type: awsecs.DeploymentControllerType_CODE_DEPLOY,
 		},
-		EnableExecuteCommand: jsii.Bool(true),
+		EnableExecuteCommand:   jsii.Bool(true),
+		HealthCheckGracePeriod: awscdk.Duration_Seconds(jsii.Number(60)),
 	})
 
 	svc.AttachToApplicationTargetGroup(blueTG)

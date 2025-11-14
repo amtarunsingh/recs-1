@@ -23,8 +23,10 @@ type CountersConfig struct {
 }
 
 type PipelineConfig struct {
-	ConnectionArn string `env:"CONNECTION_ARN" envDefault:"arn:aws:codeconnections:us-east-2:875632962180:connection/cc2e1ba7-8dd3-48bf-a687-cfc28fbd99e2"`
-	Branch        string `env:"PIPELINE_BRANCH" envDefault:"master"`
+	ConnectionArn string `env:"CONNECTION_ARN"`
+	Owner         string `env:"REPO_OWNER"`
+	Repo          string `env:"PIPELINE_REPO"`
+	Branch        string `env:"PIPELINE_BRANCH"`
 }
 
 type Config struct {
