@@ -56,7 +56,7 @@ func NewEcsService(
 		TaskRole:       taskRole,
 	})
 
-	ecrRepo := awsecr.Repository_FromRepositoryName(scope, jsii.String(id+"EcrRepo"), serviceName)
+	ecrRepo := awsecr.Repository_FromRepositoryName(scope, jsii.String(id+"EcrRepo"), jsii.String("user-votes-api"))
 
 	imageTag := os.Getenv("IMAGE_TAG")
 	if imageTag == "" {

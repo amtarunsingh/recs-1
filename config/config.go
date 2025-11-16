@@ -1,8 +1,12 @@
 package config
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/bmbl-bumble2/recs-votes-storage/internal/shared/timeutil"
 	env "github.com/caarlos0/env/v10"
+	"github.com/joho/godotenv"
 )
 
 const (
@@ -29,18 +33,18 @@ type PipelineConfig struct {
 	Branch        string `env:"PIPELINE_BRANCH"`
 }
 
+type AWSConfig struct {
+	Region           string `env:"AWS_REGION"`
+	AccountId        string `env:"AWS_ACCOUNT_ID"`
+	AccessKeyId      string `env:"AWS_ACCESS_KEY_ID"`
+	SecretAccessKey  string `env:"AWS_SECRET_ACCESS_KEY"`
+	DynamoDbEndpoint string `env:"DYNAMO_DB_ENDPOINT"`
+	SnsEndpoint      string `env:"SNS_ENDPOINT"`
+}
+
 type Config struct {
-	LogLevel string `env:"LOG_LEVEL" envDefault:"INFO"`
-	Aws      struct {
-		Region    string `env:"AWS_REGION" envDefault:"us-east-2"`
-		AccountId string `env:"AWS_ACCOUNT_ID" envDefault:"000000000000"`
-		// AccessKeyId      string `env:"AWS_ACCESS_KEY_ID" envDefault:"dummy"`
-		// SecretAccessKey  string `env:"AWS_SECRET_ACCESS_KEY" envDefault:"dummy"`
-		AccessKeyId      string `env:"AWS_ACCESS_KEY_ID"`
-		SecretAccessKey  string `env:"AWS_SECRET_ACCESS_KEY"`
-		DynamoDbEndpoint string `env:"DYNAMO_DB_ENDPOINT"`
-		SnsEndpoint      string `env:"SNS_ENDPOINT"`
-	}
+	LogLevel string `env:"LOG_LEVEL"`
+	Aws      AWSConfig
 	Counters CountersConfig
 	Romances RomancesConfig
 	Pipeline PipelineConfig
@@ -52,7 +56,14 @@ type ServerOptions struct {
 }
 
 func Load() Config {
+	_ = godotenv.Load("./../.env.local")
 	cfg := Config{
+		Aws: AWSConfig{
+			AccountId:       os.Getenv("AWS_ACCOUNT_ID"),
+			Region:          os.Getenv("AWS_REGION"),
+			AccessKeyId:     os.Getenv("AWS_ACCESS_KEY_ID"),
+			SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+		},
 		Counters: CountersConfig{
 			TtlSeconds: CountersTtlHours * timeutil.HourSeconds,
 		},
@@ -62,6 +73,7 @@ func Load() Config {
 			DeadRomanceTtlSeconds:      90 * timeutil.DaySeconds,
 		},
 	}
+	fmt.Println("AWS_ACCOUNT_ID", cfg.Aws.AccountId)
 	if err := env.Parse(&cfg); err != nil {
 		panic(err)
 	}
