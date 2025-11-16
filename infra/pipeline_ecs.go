@@ -5,7 +5,6 @@ import (
 
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	awsec2 "github.com/aws/aws-cdk-go/awscdk/v2/awsec2"
-	awsecr "github.com/aws/aws-cdk-go/awscdk/v2/awsecr"
 	awsecs "github.com/aws/aws-cdk-go/awscdk/v2/awsecs"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awselasticloadbalancingv2"
 	awsiam "github.com/aws/aws-cdk-go/awscdk/v2/awsiam"
@@ -56,15 +55,13 @@ func NewEcsService(
 		TaskRole:       taskRole,
 	})
 
-	ecrRepo := awsecr.Repository_FromRepositoryName(scope, jsii.String(id+"EcrRepo"), jsii.String("user-votes-api"))
-
 	imageTag := os.Getenv("IMAGE_TAG")
 	if imageTag == "" {
 		imageTag = "latest"
 	}
 
 	task.AddContainer(jsii.String("app"), &awsecs.ContainerDefinitionOptions{
-		Image:        awsecs.ContainerImage_FromEcrRepository(ecrRepo, jsii.String(imageTag)),
+		Image:        awsecs.ContainerImage_FromRegistry(jsii.String("public.ecr.aws/docker/library/busybox:latest"), nil),
 		Essential:    jsii.Bool(true),
 		PortMappings: &[]*awsecs.PortMapping{{ContainerPort: jsii.Number(8888)}},
 		EntryPoint:   &[]*string{jsii.String("sh"), jsii.String("-c")},

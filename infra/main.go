@@ -40,6 +40,16 @@ func main() {
 		}
 		vpc, alb, prodListener, testListener, blueTG, greenTG := NewNetwork(stack, "Net", nil)
 
+		repoName := getOrDefault("ECR_REPO_NAME", "user-votes-api")
+		ecrRepo := awsecr.NewRepository(stack, jsii.String("EcrRepo"), &awsecr.RepositoryProps{
+			RepositoryName:     jsii.String(repoName),
+			ImageScanOnPush:    jsii.Bool(true),
+			ImageTagMutability: awsecr.TagMutability_IMMUTABLE,
+			LifecycleRules: &[]*awsecr.LifecycleRule{{
+				MaxImageCount: jsii.Number(30),
+			}},
+		})
+
 		_, svc, execRole, taskRole := NewEcsService(
 			stack, "Ecs",
 			vpc,
@@ -55,16 +65,6 @@ func main() {
 		data.DeleteRomancesGroupFifoQueue.GrantConsumeMessages(taskRole)
 
 		dg := NewEcsDeployment(stack, "CD", svc, prodListener, testListener, blueTG, greenTG)
-
-		repoName := getOrDefault("ECR_REPO_NAME", "user-votes-api")
-		ecrRepo := awsecr.NewRepository(stack, jsii.String("EcrRepo"), &awsecr.RepositoryProps{
-			RepositoryName:     jsii.String(repoName),
-			ImageScanOnPush:    jsii.Bool(true),
-			ImageTagMutability: awsecr.TagMutability_IMMUTABLE,
-			LifecycleRules: &[]*awsecr.LifecycleRule{{
-				MaxImageCount: jsii.Number(30),
-			}},
-		})
 
 		NewPipeline(
 			stack, "Pipe",
