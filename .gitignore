@@ -1,5 +1,7 @@
 .idea
 .DS_Store
+.env.local
+.env.example
 /tmp/
 /bin/
 /docker/.localstack/
