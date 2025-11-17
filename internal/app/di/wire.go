@@ -72,6 +72,7 @@ func InitializeApiWebServer(config config.Config) (*app.ApiWebServer, error) {
 func InitializeMessageProcessor(config config.Config) (*app.MessageProcessor, error) {
 	wire.Build(
 		PlatformSet,
+		MetricsSet,
 		ReposSet,
 		amazon_sns.NewSnsSubscriber,
 		amazon_sns.NewSnsPublisher,
