@@ -85,9 +85,9 @@ The Prometheus configuration is located in `prometheus.yml`. It scrapes the vote
 
 Key settings:
 - Scrape interval: 15s
-- Target: localhost:8888/metrics
+- Target: votes-app-dev:8888/metrics (Docker service name)
 - Job name: votes-storage-api
-- Network mode: host (allows Prometheus to access localhost services)
+- Network: Joins the app's Docker network (user-votes_default)
 
 ## Data Persistence
 
