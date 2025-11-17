@@ -5,20 +5,30 @@ import (
 	"github.com/bmbl-bumble2/recs-votes-storage/config"
 	"github.com/bmbl-bumble2/recs-votes-storage/internal/app/api/response"
 	votingV1 "github.com/bmbl-bumble2/recs-votes-storage/internal/context/voting/interface/api/rest/v1"
+	"github.com/bmbl-bumble2/recs-votes-storage/internal/shared/platform/metrics"
+	"github.com/bmbl-bumble2/recs-votes-storage/internal/shared/platform/middleware"
 	huma "github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
 )
 
 type HandlerFactory struct {
 	votesStorageRoutesRegister votingV1.VotesStorageRoutesRegister
+	metricsRegistry            *prometheus.Registry
+	metrics                    *metrics.Metrics
 }
 
 func NewHandlerFactory(
 	votesStorageRoutesRegister votingV1.VotesStorageRoutesRegister,
+	metricsRegistry *prometheus.Registry,
+	metrics *metrics.Metrics,
 ) HandlerFactory {
 	return HandlerFactory{
 		votesStorageRoutesRegister: votesStorageRoutesRegister,
+		metricsRegistry:            metricsRegistry,
+		metrics:                    metrics,
 	}
 }
 
@@ -28,12 +38,15 @@ func (s HandlerFactory) NewHumaApiServerHandler() http.Handler {
 	grp := huma.NewGroup(api, "/v1")
 
 	s.registerHealthCheck(api)
+	s.registerMetricsEndpoint(handler)
 	s.setApiErrorSchema()
 	s.registerDefaultOpenApiErrorsResponses(grp, 400, 422, 500)
 
 	s.votesStorageRoutesRegister.RegisterV1Routes(grp)
 
-	return handler
+	// Wrap with metrics middleware
+	metricsMiddleware := middleware.NewMetricsMiddleware(s.metrics)
+	return metricsMiddleware.Wrap(handler)
 }
 
 func (s HandlerFactory) registerHealthCheck(api huma.API) {
@@ -45,6 +58,10 @@ func (s HandlerFactory) registerHealthCheck(api huma.API) {
 	}, func(ctx context.Context, input *struct{}) (*struct{}, error) {
 		return nil, nil
 	})
+}
+
+func (s HandlerFactory) registerMetricsEndpoint(mux *http.ServeMux) {
+	mux.Handle("/metrics", promhttp.HandlerFor(s.metricsRegistry, promhttp.HandlerOpts{}))
 }
 
 func (s HandlerFactory) registerDefaultOpenApiErrorsResponses(grp *huma.Group, codes ...int) {

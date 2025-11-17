@@ -21,6 +21,7 @@ import (
 	"github.com/bmbl-bumble2/recs-votes-storage/internal/shared/platform"
 	"github.com/bmbl-bumble2/recs-votes-storage/internal/shared/platform/amazon_sns"
 	"github.com/bmbl-bumble2/recs-votes-storage/internal/shared/platform/dynamodb"
+	"github.com/bmbl-bumble2/recs-votes-storage/internal/shared/platform/metrics"
 	"github.com/google/wire"
 )
 
@@ -28,13 +29,15 @@ import (
 
 func InitializeApiWebServer(config2 config.Config) (*app.ApiWebServer, error) {
 	logger := platform.NewLogger(config2)
+	registry := metrics.NewRegistry()
+	metricsInstance := metrics.NewMetrics(registry)
 	client := dynamodb.NewDynamoDbClient(config2, logger)
 	romancesRepository := persistence.NewRomancesRepository(client, config2, logger)
 	countersRepository := persistence.NewCountersRepository(client, config2, logger)
-	addUserVoteOperation := operation.NewAddUserVoteOperation(romancesRepository, countersRepository, logger)
+	addUserVoteOperation := operation.NewAddUserVoteOperation(romancesRepository, countersRepository, logger, metricsInstance)
 	getUserVoteOperation := operation.NewGetUserVoteOperation(romancesRepository)
-	deleteUserVoteOperation := operation.NewDeleteUserVoteOperation(romancesRepository, countersRepository, logger)
-	changeUserVoteOperation := operation.NewChangeUserVoteOperation(romancesRepository, countersRepository, logger)
+	deleteUserVoteOperation := operation.NewDeleteUserVoteOperation(romancesRepository, countersRepository, logger, metricsInstance)
+	changeUserVoteOperation := operation.NewChangeUserVoteOperation(romancesRepository, countersRepository, logger, metricsInstance)
 	getRomanceOperation := operation.NewGetRomanceOperation(romancesRepository)
 	deleteRomanceOperation := operation.NewDeleteRomanceOperation(romancesRepository)
 	snsPublisher := amazon_sns.NewSnsPublisher(config2, logger)
@@ -45,7 +48,7 @@ func InitializeApiWebServer(config2 config.Config) (*app.ApiWebServer, error) {
 	getHourlyCountersOperation := operation.NewGetHourlyCountersOperation(countersRepository)
 	votingService := application.NewVotingService(addUserVoteOperation, getUserVoteOperation, deleteUserVoteOperation, changeUserVoteOperation, getRomanceOperation, deleteRomanceOperation, deleteRomancesRequestOperation, deleteRomancesOperation, deleteRomancesGroupOperation, getLifetimeCountersOperation, getHourlyCountersOperation)
 	votesStorageRoutesRegister := v1.NewVotesStorageRoutesRegister(votingService)
-	handlerFactory := api.NewHandlerFactory(votesStorageRoutesRegister)
+	handlerFactory := api.NewHandlerFactory(votesStorageRoutesRegister, registry, metricsInstance)
 	apiWebServer := app.NewApiWebServer(handlerFactory, config2, logger)
 	return apiWebServer, nil
 }
@@ -80,6 +83,8 @@ func InitializeMessageProcessor(config2 config.Config) (*app.MessageProcessor, e
 // wire.go:
 
 var PlatformSet = wire.NewSet(platform.NewLogger)
+
+var MetricsSet = wire.NewSet(metrics.NewRegistry, metrics.NewMetrics)
 
 var ReposSet = wire.NewSet(dynamodb.NewDynamoDbClient, persistence.NewRomancesRepository, persistence.NewCountersRepository, wire.Bind(new(repository.RomancesRepository), new(*persistence.RomancesRepository)), wire.Bind(new(repository2.CountersRepository), new(*persistence.CountersRepository)))
 

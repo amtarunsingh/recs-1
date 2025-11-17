@@ -18,11 +18,17 @@ import (
 	"github.com/bmbl-bumble2/recs-votes-storage/internal/shared/platform"
 	"github.com/bmbl-bumble2/recs-votes-storage/internal/shared/platform/amazon_sns"
 	"github.com/bmbl-bumble2/recs-votes-storage/internal/shared/platform/dynamodb"
+	"github.com/bmbl-bumble2/recs-votes-storage/internal/shared/platform/metrics"
 	"github.com/google/wire"
 )
 
 var PlatformSet = wire.NewSet(
 	platform.NewLogger,
+)
+
+var MetricsSet = wire.NewSet(
+	metrics.NewRegistry,
+	metrics.NewMetrics,
 )
 
 var ReposSet = wire.NewSet(
@@ -51,6 +57,7 @@ var OperationsSet = wire.NewSet(
 func InitializeApiWebServer(config config.Config) (*app.ApiWebServer, error) {
 	wire.Build(
 		PlatformSet,
+		MetricsSet,
 		ReposSet,
 		amazon_sns.NewSnsPublisher,
 		wire.Bind(new(messaging.Publisher), new(*amazon_sns.SnsPublisher)),

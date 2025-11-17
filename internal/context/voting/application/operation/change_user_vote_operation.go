@@ -12,6 +12,7 @@ import (
 	romancesValueObject "github.com/bmbl-bumble2/recs-votes-storage/internal/context/voting/domain/romance/valueobject"
 	sharedValueObject "github.com/bmbl-bumble2/recs-votes-storage/internal/context/voting/domain/sharedkernel/valueobject"
 	"github.com/bmbl-bumble2/recs-votes-storage/internal/shared/platform"
+	"github.com/bmbl-bumble2/recs-votes-storage/internal/shared/platform/metrics"
 )
 
 var allowedVoteTransitions = map[romancesValueObject.VoteType]map[romancesValueObject.VoteType]struct{}{
@@ -38,17 +39,20 @@ type ChangeUserVoteOperation struct {
 	romancesRepository romancesRepo.RomancesRepository
 	countersRepository countersRepo.CountersRepository
 	logger             platform.Logger
+	metrics            *metrics.Metrics
 }
 
 func NewChangeUserVoteOperation(
 	romancesRepository romancesRepo.RomancesRepository,
 	countersRepository countersRepo.CountersRepository,
 	logger platform.Logger,
+	metrics *metrics.Metrics,
 ) *ChangeUserVoteOperation {
 	return &ChangeUserVoteOperation{
 		romancesRepository: romancesRepository,
 		countersRepository: countersRepository,
 		logger:             logger,
+		metrics:            metrics,
 	}
 }
 
@@ -64,14 +68,19 @@ func (r *ChangeUserVoteOperation) Run(
 		romance, err := getRomanceOperation.Run(ctx, voteId)
 		if err != nil {
 			r.logger.Error(fmt.Sprintf("GetRomance error: %+v", err))
+			r.metrics.RecordVoteError("change", "get_romance_error")
 			return entity.Vote{}, err
 		}
 
+		oldVoteType := romance.ActiveUserVote.VoteType
+
 		if err := isVoteTypeChangeAllowed(romance.ActiveUserVote, newVoteType); err != nil {
+			r.metrics.RecordVoteError("change", "invalid_transition")
 			return entity.Vote{}, err
 		}
 
 		if newVoteType == romance.ActiveUserVote.VoteType {
+			r.metrics.RecordVoteError("change", "duplicate")
 			return entity.Vote{}, romanceDomain.ErrVoteDuplicate
 		}
 
@@ -87,8 +96,12 @@ func (r *ChangeUserVoteOperation) Run(
 				continue
 			}
 			r.logger.Error(fmt.Sprintf("ChangeActiveUserVoteTypeInRomance error: %+v", err))
+			r.metrics.RecordVoteError("change", "db_error")
 			return entity.Vote{}, err
 		}
+
+		// Record successful vote change
+		r.metrics.RecordVoteChanged(oldVoteType.String(), newVoteType.String())
 
 		return romance.ActiveUserVote, nil
 	}
