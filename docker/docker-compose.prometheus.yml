@@ -5,8 +5,6 @@ services:
     image: prom/prometheus:v3.2.0
     container_name: votes-prometheus
     network_mode: "host"
-    ports:
-      - "9090:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
