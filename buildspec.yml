@@ -10,7 +10,7 @@ env:
 phases:
   install:
     runtime-versions:
-      golang: 1.23
+      golang: 1.25.3
     commands:
       - echo "Go runtime:" && go version || true
 

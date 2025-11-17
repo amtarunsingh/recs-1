@@ -32,8 +32,9 @@ func NewDynamoDbClient(conf appConfig.Config, logger platform.Logger) Client {
 		config.WithRegion(conf.Aws.Region),
 	}
 
-	if conf.Aws.AccessKeyId == "" && conf.Aws.SecretAccessKey == "" {
-		opts = append(opts, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(conf.Aws.AccessKeyId, conf.Aws.SecretAccessKey, "")))
+	if conf.Aws.AccessKeyId != "" && conf.Aws.SecretAccessKey != "" {
+		opts = append(opts, config.WithCredentialsProvider(
+			credentials.NewStaticCredentialsProvider(conf.Aws.AccessKeyId, conf.Aws.SecretAccessKey, "")))
 	}
 
 	if conf.Aws.DynamoDbEndpoint != "" {
