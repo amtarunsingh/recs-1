@@ -2,14 +2,16 @@
 
 This directory contains the Prometheus configuration for monitoring the votes-storage service.
 
+**Note**: Prometheus runs as a **separate service** and does **not** start with `make dev-up`. This allows you to monitor the application independently without adding overhead to the main development stack.
+
 ## Quick Start
 
-### Start all services including Prometheus
+### 1. Start the application stack
 ```bash
 make dev-up
 ```
 
-### Start only Prometheus (if app is already running)
+### 2. Start Prometheus (separate command)
 ```bash
 make prometheus-up
 ```
@@ -83,15 +85,16 @@ The Prometheus configuration is located in `prometheus.yml`. It scrapes the vote
 
 Key settings:
 - Scrape interval: 15s
-- Target: app:8888/metrics
+- Target: localhost:8888/metrics
 - Job name: votes-storage-api
+- Network mode: host (allows Prometheus to access localhost services)
 
 ## Data Persistence
 
 Prometheus data is stored in a Docker volume named `prometheus-data`. To reset all metrics data:
 
 ```bash
-docker compose -f docker/docker-compose.dev.yml down -v
+docker compose -f docker/docker-compose.prometheus.yml down -v
 ```
 
 **Warning**: This will delete all Prometheus historical data.

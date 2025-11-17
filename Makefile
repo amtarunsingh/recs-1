@@ -5,6 +5,7 @@ PKG := ./...
 COVERAGE_MIN := 95.0
 GOLANGCI_VERSION := v2.5.0
 DOCKER_DEV_FILE := docker/docker-compose.dev.yml
+DOCKER_PROMETHEUS_FILE := docker/docker-compose.prometheus.yml
 
 .PHONY: help fmt fmt-check lint test test-coverage generate-mocks wire build dev-up dev-down prometheus-up prometheus-down prometheus-reload check-commit-msg-has-jira check-branch-name check-todo verify-common verify-pre-commit verify-pre-push
 
@@ -64,13 +65,13 @@ dev-up: ## Spin up the docker containers for local development
 dev-down: ## Shut down the docker containers
 	docker compose -f $(DOCKER_DEV_FILE) down
 
-prometheus-up: ## Start Prometheus container
+prometheus-up: ## Start Prometheus container (separate from dev stack)
 	@echo ">> Starting Prometheus"
-	docker compose -f $(DOCKER_DEV_FILE) up -d prometheus
+	docker compose -f $(DOCKER_PROMETHEUS_FILE) up -d
 
-prometheus-down: ## Stop Prometheus container
+prometheus-down: ## Stop and remove Prometheus container
 	@echo ">> Stopping Prometheus"
-	docker compose -f $(DOCKER_DEV_FILE) stop prometheus
+	docker compose -f $(DOCKER_PROMETHEUS_FILE) down
 
 prometheus-reload: ## Reload Prometheus configuration
 	@echo ">> Reloading Prometheus configuration"

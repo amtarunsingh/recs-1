@@ -89,25 +89,6 @@ services:
       - go-mod:/go/pkg/mod
       - go-build:/root/.cache/go-build
 
-  prometheus:
-    image: prom/prometheus:v3.2.0
-    container_name: votes-prometheus
-    depends_on:
-      - app
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus-data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-      - '--web.enable-lifecycle'
-    restart: unless-stopped
-
 volumes:
   go-mod:
   go-build:
-  prometheus-data:
