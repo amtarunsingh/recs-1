@@ -55,11 +55,6 @@ func NewEcsService(
 		TaskRole:       taskRole,
 	})
 
-	imageTag := os.Getenv("IMAGE_TAG")
-	if imageTag == "" {
-		imageTag = "latest"
-	}
-
 	task.AddContainer(jsii.String("app"), &awsecs.ContainerDefinitionOptions{
 		Image:        awsecs.ContainerImage_FromRegistry(jsii.String("public.ecr.aws/docker/library/alpine:3.20"), nil),
 		Essential:    jsii.Bool(true),
