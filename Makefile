@@ -6,7 +6,7 @@ COVERAGE_MIN := 95.0
 GOLANGCI_VERSION := v2.5.0
 DOCKER_DEV_FILE := docker/docker-compose.dev.yml
 
-.PHONY: help fmt fmt-check lint test test-coverage generate-mocks wire build dev-up dev-down check-commit-msg-has-jira check-branch-name check-todo verify-common verify-pre-commit verify-pre-push
+.PHONY: help fmt fmt-check lint test test-coverage generate-mocks wire build dev-up dev-down prometheus-up prometheus-down prometheus-reload check-commit-msg-has-jira check-branch-name check-todo verify-common verify-pre-commit verify-pre-push
 
 help: ## Show this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*?##/ {printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -63,6 +63,18 @@ dev-up: ## Spin up the docker containers for local development
 
 dev-down: ## Shut down the docker containers
 	docker compose -f $(DOCKER_DEV_FILE) down
+
+prometheus-up: ## Start Prometheus container
+	@echo ">> Starting Prometheus"
+	docker compose -f $(DOCKER_DEV_FILE) up -d prometheus
+
+prometheus-down: ## Stop Prometheus container
+	@echo ">> Stopping Prometheus"
+	docker compose -f $(DOCKER_DEV_FILE) stop prometheus
+
+prometheus-reload: ## Reload Prometheus configuration
+	@echo ">> Reloading Prometheus configuration"
+	docker exec votes-prometheus kill -HUP 1
 
 check-commit-msg-has-jira: ## Ensure the commit message has a Jira ticket reference
 	./scripts/check-commit-msg-has-jira.sh $(COMMIT_MSG_FILE)
