@@ -29,8 +29,38 @@ make prometheus-reload
 
 ## Access
 
+- **Grafana Dashboard**: http://localhost:3000 (username: `admin`, password: `admin`)
 - **Prometheus UI**: http://localhost:9090
 - **Metrics endpoint**: http://localhost:8888/metrics
+
+## Grafana Dashboards
+
+Grafana provides beautiful, permanent dashboards for visualizing your metrics without manual queries.
+
+### Pre-Built Dashboard: "Votes Storage Overview"
+
+This dashboard is automatically loaded and includes:
+
+1. **HTTP Request Rate by Endpoint** - Line graph showing requests/sec for each API endpoint
+2. **P95 Response Time** - Gauge showing 95th percentile latency (SLA monitoring)
+3. **Votes by Type and Operation** - Time series showing vote trends (yes, no, crush, compliment)
+4. **Vote Type Distribution** - Pie chart showing proportion of each vote type
+5. **Vote Errors Rate** - Line graph tracking errors by type (duplicates, invalid transitions, etc.)
+6. **Vote Type Changes** - Stacked bar chart showing vote transitions (yes→crush, etc.)
+
+### How to Access
+
+1. Open http://localhost:3000
+2. Login with username: `admin`, password: `admin`
+3. Click "Dashboards" → "Votes Storage Overview"
+4. All graphs update automatically in real-time!
+
+### Customizing Dashboards
+
+- Click the panel title → **Edit** to modify queries
+- Click ⭐ to save to favorites
+- Use the time range picker (top right) to view different time periods
+- All changes are automatically saved
 
 ## Available Metrics
 
