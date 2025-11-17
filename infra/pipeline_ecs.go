@@ -61,12 +61,12 @@ func NewEcsService(
 	}
 
 	task.AddContainer(jsii.String("app"), &awsecs.ContainerDefinitionOptions{
-		Image:        awsecs.ContainerImage_FromRegistry(jsii.String("public.ecr.aws/docker/library/busybox:latest"), nil),
+		Image:        awsecs.ContainerImage_FromRegistry(jsii.String("public.ecr.aws/docker/library/alpine:3.20"), nil),
 		Essential:    jsii.Bool(true),
 		PortMappings: &[]*awsecs.PortMapping{{ContainerPort: jsii.Number(8888)}},
 		EntryPoint:   &[]*string{jsii.String("sh"), jsii.String("-c")},
 		Command: &[]*string{
-			jsii.String("mkdir -p /www && echo OK > /www/health && httpd -f -p 8888 -h /www"),
+			jsii.String("apk add --no-cache curl && mkdir -p /www && echo OK > /www/health && httpd -f -p 8888 -h /www"),
 		},
 		Logging: awsecs.LogDrivers_AwsLogs(&awsecs.AwsLogDriverProps{
 			StreamPrefix: jsii.String("app"),
